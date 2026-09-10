@@ -169,9 +169,9 @@
       border-radius: inherit;
       background: radial-gradient(
         circle at var(--mx, 50%) var(--my, 50%),
-        rgba(59, 130, 246, 0.14),
-        rgba(94, 234, 212, 0.045) 32%,
-        transparent 48%
+        rgba(59, 130, 246, 0.20),
+        rgba(94, 234, 212, 0.075) 36%,
+        transparent 55%
       );
       mix-blend-mode: multiply;
       opacity: 0;
@@ -403,16 +403,23 @@
     }
 
     .hero h1 {
-      margin: 0 0 20px;
+      margin: 0 0 18px;
       color: var(--text);
-      font-size: clamp(4rem, 11vw, 7.8rem);
-      line-height: 0.92;
-      letter-spacing: -0.075em;
-      font-weight: 680;
+      font-family: "Segoe UI", "Microsoft YaHei UI", "PingFang SC",
+        "Hiragino Sans GB", sans-serif;
+      font-size: clamp(3rem, 7.8vw, 5.6rem);
+      line-height: 1.08;
+      letter-spacing: 0.12em;
+      font-weight: 260;
     }
 
     .hero h1 .dot {
-      color: var(--blue);
+      margin-left: 0.06em;
+      color: var(--mint);
+      font-family: var(--mono);
+      font-size: 0.2em;
+      font-weight: 400;
+      vertical-align: super;
     }
 
     .hero-en {
@@ -1031,17 +1038,35 @@
       top: 0;
       left: 0;
       z-index: 2;
-      width: 520px;
-      height: 520px;
-      margin: -260px 0 0 -260px;
+      width: 760px;
+      height: 760px;
+      margin: -380px 0 0 -380px;
       pointer-events: none;
       border-radius: 50%;
       background: radial-gradient(
         circle,
-        rgba(59, 130, 246, 0.075),
-        rgba(56, 189, 248, 0.035) 44%,
-        transparent 70%
+        rgba(59, 130, 246, 0.16),
+        rgba(56, 189, 248, 0.065) 42%,
+        rgba(94, 234, 212, 0.035) 62%,
+        transparent 76%
       );
+      opacity: 0;
+      will-change: transform, opacity;
+    }
+
+    .cursor-ring {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 80;
+      width: 36px;
+      height: 36px;
+      margin: -18px 0 0 -18px;
+      border: 1px solid rgba(59, 130, 246, 0.48);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.34);
+      box-shadow: 0 0 24px rgba(59, 130, 246, 0.22);
+      pointer-events: none;
       opacity: 0;
       will-change: transform, opacity;
     }
@@ -1239,7 +1264,8 @@
       }
 
       .hero h1 {
-        font-size: clamp(3.3rem, 19vw, 5.2rem);
+        font-size: clamp(2.7rem, 15vw, 4.4rem);
+        letter-spacing: 0.1em;
       }
 
       .hero-visual {
@@ -1307,6 +1333,7 @@
   <!-- 鼠标轨迹微光层 -->
   <canvas id="cursor-canvas" aria-hidden="true"></canvas>
   <div class="cursor-glow" id="cursor-glow" aria-hidden="true"></div>
+  <div class="cursor-ring" id="cursor-ring" aria-hidden="true"></div>
 
   <!-- 顶部导航栏 -->
   <header class="nav" id="navbar">
@@ -1629,6 +1656,11 @@
     /* ============================================================
        极淡浮动光斑：粒子数量少、速度慢，保持安静
        ============================================================ */
+    const pointer = {
+      x: window.innerWidth / 2,
+      y: window.innerHeight * 0.34,
+      active: false
+    };
     const canvas = document.getElementById("particle-canvas");
     const ctx = canvas.getContext("2d");
     let particles = [];
@@ -1666,6 +1698,19 @@
 
       particles.forEach((p, index) => {
         p.y -= p.speed;
+
+        if (pointer.active) {
+          const dx = p.x - pointer.x;
+          const dy = p.y - pointer.y;
+          const distance = Math.hypot(dx, dy);
+
+          if (distance < 160 && distance > 0.01) {
+            const force = (1 - distance / 160) * 1.05;
+            p.x += (dx / distance) * force;
+            p.y += (dy / distance) * force;
+          }
+        }
+
         const x = p.x + Math.sin(time * 0.00022 + p.phase) * p.drift;
 
         if (p.y < -14) {
@@ -1719,11 +1764,11 @@
       return {
         x,
         y,
-        vx: (Math.random() - 0.5) * 0.72,
-        vy: -0.12 + Math.random() * 0.52,
-        radius: 0.7 + Math.random() * 1.8,
+        vx: (Math.random() - 0.5) * 1.05,
+        vy: -0.18 + Math.random() * 0.75,
+        radius: 1.1 + Math.random() * 2.2,
         life: 0,
-        maxLife: 0.55 + Math.random() * 0.75,
+        maxLife: 0.7 + Math.random() * 0.9,
         color: isMint ? "94, 234, 212" : "59, 130, 246"
       };
     }
@@ -1739,7 +1784,7 @@
         if (p.life >= p.maxLife) return false;
 
         const progress = p.life / p.maxLife;
-        const alpha = (1 - progress) * 0.22;
+        const alpha = (1 - progress) * 0.36;
         cursorCtx.beginPath();
         cursorCtx.arc(p.x, p.y, p.radius * (1 - progress * 0.45), 0, Math.PI * 2);
         cursorCtx.fillStyle = `rgba(${p.color}, ${alpha.toFixed(3)})`;
@@ -1752,17 +1797,25 @@
 
     window.addEventListener("pointermove", (event) => {
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-      for (let i = 0; i < 3; i += 1) {
+      pointer.x = event.clientX;
+      pointer.y = event.clientY;
+      pointer.active = true;
+
+      for (let i = 0; i < 7; i += 1) {
         trailParticles.push(
           createTrailParticle(
-            event.clientX + (Math.random() - 0.5) * 12,
-            event.clientY + (Math.random() - 0.5) * 12
+            event.clientX + (Math.random() - 0.5) * 18,
+            event.clientY + (Math.random() - 0.5) * 18
           )
         );
       }
-      if (trailParticles.length > 130) {
-        trailParticles.splice(0, trailParticles.length - 130);
+      if (trailParticles.length > 220) {
+        trailParticles.splice(0, trailParticles.length - 220);
       }
+    });
+
+    window.addEventListener("pointerleave", () => {
+      pointer.active = false;
     });
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -1778,28 +1831,36 @@
     }
 
     /* ============================================================
-       鼠标光晕：缓慢跟随，弱化存在感
+       鼠标光晕与指针圆环：明显但不抢内容
        ============================================================ */
     const glow = document.getElementById("cursor-glow");
-    const pointer = { x: window.innerWidth / 2, y: window.innerHeight * 0.34 };
+    const ring = document.getElementById("cursor-ring");
     const glowPos = { x: pointer.x, y: pointer.y };
+    const ringPos = { x: pointer.x, y: pointer.y };
     let glowActive = false;
 
     window.addEventListener("pointermove", (event) => {
       pointer.x = event.clientX;
       pointer.y = event.clientY;
+      pointer.active = true;
       glowActive = true;
     });
 
     window.addEventListener("pointerleave", () => {
+      pointer.active = false;
       glowActive = false;
     });
 
     function animateGlow() {
       glowPos.x += (pointer.x - glowPos.x) * 0.052;
       glowPos.y += (pointer.y - glowPos.y) * 0.052;
+      ringPos.x += (pointer.x - ringPos.x) * 0.17;
+      ringPos.y += (pointer.y - ringPos.y) * 0.17;
+
       glow.style.opacity = glowActive ? "1" : "0";
       glow.style.transform = `translate3d(${glowPos.x}px, ${glowPos.y}px, 0)`;
+      ring.style.opacity = glowActive ? "1" : "0";
+      ring.style.transform = `translate3d(${ringPos.x}px, ${ringPos.y}px, 0)`;
       requestAnimationFrame(animateGlow);
     }
 
@@ -1819,8 +1880,8 @@
         const rect = card.getBoundingClientRect();
         const x = (event.clientX - rect.left) / rect.width;
         const y = (event.clientY - rect.top) / rect.height;
-        const rotateY = (x - 0.5) * 5;
-        const rotateX = (0.5 - y) * 4;
+        const rotateY = (x - 0.5) * 8;
+        const rotateX = (0.5 - y) * 6;
 
         card.style.setProperty("--mx", `${x * 100}%`);
         card.style.setProperty("--my", `${y * 100}%`);
